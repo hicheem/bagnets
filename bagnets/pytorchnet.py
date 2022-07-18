@@ -133,7 +133,7 @@ class BagNet(nn.Module):
 
             return x, 
 
-def bagnet33(pretrained=False, strides=[2, 2, 2, 1], client, **kwargs):
+def bagnet33(pretrained=False, strides=[2, 2, 2, 1], client=False, **kwargs):
     """Constructs a Bagnet-33 model.
 
     Args:
