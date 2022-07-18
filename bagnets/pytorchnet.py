@@ -111,7 +111,7 @@ class BagNet(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
-        if !client:
+        if (!client):
             x = self.conv1(x)
             x = self.conv2(x)
             x = self.bn1(x)
