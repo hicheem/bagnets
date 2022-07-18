@@ -67,21 +67,24 @@ class BagNet(nn.Module):
     def __init__(self, block, layers, strides=[1, 2, 2, 2], kernel3=[0, 0, 0, 0], num_classes=1000, avg_pool=True, client = False):
         self.inplanes = 64
         super(BagNet, self).__init__()
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=1, stride=1, padding=0,
-                               bias=False)
-        self.conv2 = nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0,
-                               bias=False)
-        self.bn1 = nn.BatchNorm2d(64, momentum=0.001)
-        self.relu = nn.ReLU(inplace=True)
-        self.layer1 = self._make_layer(block, 64, layers[0], stride=strides[0], kernel3=kernel3[0], prefix='layer1')
-#         self.layer2 = self._make_layer(block, 128, layers[1], stride=strides[1], kernel3=kernel3[1], prefix='layer2')
-#         self.layer3 = self._make_layer(block, 256, layers[2], stride=strides[2], kernel3=kernel3[2], prefix='layer3')
-#         self.layer4 = self._make_layer(block, 512, layers[3], stride=strides[3], kernel3=kernel3[3], prefix='layer4')
-#         self.avgpool = nn.AvgPool2d(1, stride=1)
-#         self.fc = nn.Linear(512 * block.expansion, num_classes)
-        self.avg_pool = avg_pool
-        self.block = block
         self.client = client
+        if(self.client == True):
+            self.conv1 = nn.Conv2d(3, 64, kernel_size=1, stride=1, padding=0,
+                               bias=False)
+            self.conv2 = nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=0,
+                               bias=False)
+            self.bn1 = nn.BatchNorm2d(64, momentum=0.001)
+            self.relu = nn.ReLU(inplace=True)
+            self.layer1 = self._make_layer(block, 64, layers[0], stride=strides[0], kernel3=kernel3[0], prefix='layer1')
+        else:            
+            self.layer2 = self._make_layer(block, 128, layers[1], stride=strides[1], kernel3=kernel3[1], prefix='layer2')
+            self.layer3 = self._make_layer(block, 256, layers[2], stride=strides[2], kernel3=kernel3[2], prefix='layer3')
+            self.layer4 = self._make_layer(block, 512, layers[3], stride=strides[3], kernel3=kernel3[3], prefix='layer4')
+            self.avgpool = nn.AvgPool2d(1, stride=1)
+            self.fc = nn.Linear(512 * block.expansion, num_classes)
+            self.avg_pool = avg_pool
+        self.block = block
+        
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -111,7 +114,7 @@ class BagNet(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
-        if self.client == False:
+        if self.client == True:
             x = self.conv1(x)
             x = self.conv2(x)
             x = self.bn1(x)
