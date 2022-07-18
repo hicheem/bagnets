@@ -3,8 +3,10 @@ import math
 import torch
 from collections import OrderedDict
 from torch.utils import model_zoo
-
+import numpy as np
+import tensorflow as tf
 import os 
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
 __all__ = ['bagnet9', 'bagnet17', 'bagnet33']
@@ -114,6 +116,7 @@ class BagNet(nn.Module):
         x = self.relu(x)
 
         x = self.layer1(x)
+        x = compress(x)
         x = self.layer2(x)
         x = self.layer3(x)
         x = self.layer4(x)
@@ -160,3 +163,22 @@ def bagnet9(pretrained=False, strides=[2, 2, 2, 1], **kwargs):
     if pretrained:
         model.load_state_dict(model_zoo.load_url(model_urls['bagnet9']))
     return model
+
+def jpeg(img, quality=100):
+  coded = torchvision.io.encode_jpeg(torch.tensor(img, dtype=torch.uint8), quality=quality)
+  decoded = torchvision.io.decode_jpeg(coded)
+  return decoded
+def compress(x, quality = 100):
+  shp = x.shape
+  jin = x.detach().cpu().numpy()
+  total = int(jin.shape[0] * jin.shape[1] * jin.shape[2] * jin.shape[3])
+  first_shp = int(jin.shape[0] * jin.shape[1])
+  second_shp = int(total / first_shp)
+  jin = np.reshape(jin, (first_shp, second_shp))
+  jin = np.expand_dims(jin, axis=0)
+  jout = jpeg(jin, quality)
+  jout = np.array(jout)
+  jout = np.reshape(jout, shp)
+  jout = torch.tensor(jout).float()
+  sin = jout.to(device)
+  return sin
