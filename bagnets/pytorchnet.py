@@ -64,7 +64,7 @@ class Bottleneck(nn.Module):
 
 class BagNet(nn.Module):
 
-    def __init__(self, block, layers, strides=[1, 2, 2, 2], kernel3=[0, 0, 0, 0], num_classes=1000, avg_pool=True):
+    def __init__(self, block, layers, strides=[1, 2, 2, 2], kernel3=[0, 0, 0, 0], num_classes=1000, avg_pool=True, client = False):
         self.inplanes = 64
         super(BagNet, self).__init__()
         self.conv1 = nn.Conv2d(3, 64, kernel_size=1, stride=1, padding=0,
@@ -81,6 +81,7 @@ class BagNet(nn.Module):
         self.fc = nn.Linear(512 * block.expansion, num_classes)
         self.avg_pool = avg_pool
         self.block = block
+        self.client = client
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -110,34 +111,35 @@ class BagNet(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
-        x = self.conv1(x)
-        x = self.conv2(x)
-        x = self.bn1(x)
-        x = self.relu(x)
-
-        x = self.layer1(x)
-        x = compress(x)
-        x = self.layer2(x)
-        x = self.layer3(x)
-        x = self.layer4(x)
-
-        if self.avg_pool:
-            x = nn.AvgPool2d(x.size()[2], stride=1)(x)
-            x = x.view(x.size(0), -1)
-            x = self.fc(x)
+        if !client:
+            x = self.conv1(x)
+            x = self.conv2(x)
+            x = self.bn1(x)
+            x = self.relu(x)
+            x = self.layer1(x)
+            return x
         else:
-            x = x.permute(0,2,3,1)
-            x = self.fc(x)
+            x = self.layer2(x)
+            x = self.layer3(x)
+            x = self.layer4(x)
 
-        return x
+            if self.avg_pool:
+                 x = nn.AvgPool2d(x.size()[2], stride=1)(x)
+                 x = x.view(x.size(0), -1)
+                 x = self.fc(x)
+            else:
+                  x = x.permute(0,2,3,1)
+                  x = self.fc(x)
 
-def bagnet33(pretrained=False, strides=[2, 2, 2, 1], **kwargs):
+            return x, 
+
+def bagnet33(pretrained=False, strides=[2, 2, 2, 1], client, **kwargs):
     """Constructs a Bagnet-33 model.
 
     Args:
         pretrained (bool): If True, returns a model pre-trained on ImageNet
     """
-    model = BagNet(Bottleneck, [3, 4, 6, 3], strides=strides, kernel3=[1,1,1,1], **kwargs)
+    model = BagNet(Bottleneck, [3, 4, 6, 3], strides=strides, kernel3=[1,1,1,1], client=client,  **kwargs)
     if pretrained:
         model.load_state_dict(model_zoo.load_url(model_urls['bagnet33']))
     return model
